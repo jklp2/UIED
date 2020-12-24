@@ -33,8 +33,8 @@ for data in pbar:
     labels = data['det_labels'][0].cpu().numpy().astype(np.int32)
     visualize_boxes(image=det_image, boxes=bboxes, labels=labels, probs=np.array(np.random.randint(100, 101, size=[len(bboxes)])/100), class_labels=classes)
     write_image(writer, f'preview_mm2019/{idx}', 'image', det_image, 0, 'HWC')
-    write_image(writer,f'preview_uieb_inp/{idx}','image',uieb_inp,0,'HWC')
-    write_image(writer,f'preview_uieb_ref/{idx}','image',uieb_ref,0,'HWC')
+    write_image(writer,f'preview_uieb/{idx*2}','image',uieb_inp,0,'HWC')
+    write_image(writer,f'preview_uieb/{idx*2+1}','image',uieb_ref,0,'HWC')
 
     idx+=1
 
