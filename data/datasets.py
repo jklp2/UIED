@@ -29,12 +29,14 @@ def imread(path):
 def collate_fn(batch):
     target = {}
     b = len(batch)
-    target['det_img'] = torch.stack([sample['det_img'] for sample in batch])
-    target['det_bboxes'] = [sample['det_bboxes'] for sample in batch]
-    target['det_labels'] = [sample['det_labels'] for sample in batch]
-    target['det_path'] = [sample['det_path'] for sample in batch]
-    target['uieb_inp'] = torch.stack([sample['uieb_inp'] for sample in batch])
-    target['uieb_ref'] = torch.stack([sample['uieb_ref'] for sample in batch])
+    if 'det_img' in batch[0].keys():
+        target['det_img'] = torch.stack([sample['det_img'] for sample in batch])
+        target['det_bboxes'] = [sample['det_bboxes'] for sample in batch]
+        target['det_labels'] = [sample['det_labels'] for sample in batch]
+        target['det_path'] = [sample['det_path'] for sample in batch]
+    if 'uieb_inp' in batch[0].keys():
+        target['uieb_inp'] = torch.stack([sample['uieb_inp'] for sample in batch])
+        target['uieb_ref'] = torch.stack([sample['uieb_ref'] for sample in batch])
 
     return target
 
@@ -87,76 +89,49 @@ class FRCNN(object):
 
 
 class uwdataset(Dataset):
-    def __init__(self, det_path, uieb_path, istrain = True):
+    def __init__(self, det_path, uieb_path):
         divisor = 32
-        self.istrain = istrain
-        width = height = short_side = 600
-        if istrain:
-            self.det_transforms = A.Compose(  # FRCNN
-                [
-                    A.SmallestMaxSize(short_side, p=1.0),  # resize到短边600
-                    A.PadIfNeeded(min_height=None, min_width=None, pad_height_divisor=divisor, pad_width_divisor=divisor, p=1.0),
+        short_side = 600
+        self.det_transforms = A.Compose(  # FRCNN
+            [
+                A.SmallestMaxSize(short_side, p=1.0),  # resize到短边600
+                A.PadIfNeeded(min_height=None, min_width=None, pad_height_divisor=divisor, pad_width_divisor=divisor,
+                              p=1.0),
 
-                    # A.RandomCrop(height=height, width=width, p=1.0),  # 600×600
-                    A.OneOf([
-                        A.HueSaturationValue(hue_shift_limit=0.3, sat_shift_limit=0.3,
-                                                val_shift_limit=0.3, p=0.95),
-                        A.RandomBrightnessContrast(brightness_limit=0.3,
-                                                    contrast_limit=0.3, p=0.95),
-                    ],p=1.0),
+                # A.RandomCrop(height=height, width=width, p=1.0),  # 600×600
+                A.OneOf([
+                    A.HueSaturationValue(hue_shift_limit=0.3, sat_shift_limit=0.3,
+                                         val_shift_limit=0.3, p=0.95),
+                    A.RandomBrightnessContrast(brightness_limit=0.3,
+                                               contrast_limit=0.3, p=0.95),
+                ], p=1.0),
 
-                    A.ToGray(p=0.01),
-                    A.HorizontalFlip(p=0.5),
-                    ToTensorV2(p=1.0),
-                ],
-                p=1.0,
-                bbox_params=A.BboxParams(
-                    format='pascal_voc',
-                    min_area=0,
-                    min_visibility=0,
-                    label_fields=['labels']
-                ),
-            )
-            self.transforms =A.Compose(
-                [
-                    A.Resize(height=300, width=300, p=1.0),
-                    A.RandomCrop(height=256, width=256, p=1.0),
-                    A.HorizontalFlip(p=0.5),
-                    A.VerticalFlip(p=0.5),
-                    A.Transpose(p=0.5),  # TTA×8
-                    ToTensorV2(p=1.0),
-                ],
-                p=1.0,
-                additional_targets = {'gt': 'image'}
-            )
-            with open(join(det_path,"ImageSets/Main/train.txt"),"r") as f:
-                self.det_ids = f.readlines()
-        else:
-            self.det_transforms = A.Compose(  # FRCNN
-                [
-                    A.SmallestMaxSize(short_side, p=1.0),  # resize到短边600
-                    A.PadIfNeeded(min_height=None, min_width=None, pad_height_divisor=divisor,
-                                  pad_width_divisor=divisor, p=1.0),
-                    ToTensorV2(p=1.0),
-                ],
-                p=1.0,
-                bbox_params=A.BboxParams(
-                    format='pascal_voc',
-                    min_area=0,
-                    min_visibility=0,
-                    label_fields=['labels']
-                ),
-            )
-            self.transforms = A.Compose(
-                [
-                    A.Resize(height=300, width=300, p=1.0),
-                    ToTensorV2(p=1.0),
-                ],
-                p=1.0,
-                additional_targets={'gt': 'image'}
-            )
-            with open(join(det_path, "ImageSets/Main/val.txt"), "r") as f:
-                self.det_ids = f.readlines()
+                A.ToGray(p=0.01),
+                A.HorizontalFlip(p=0.5),
+                ToTensorV2(p=1.0),
+            ],
+            p=1.0,
+            bbox_params=A.BboxParams(
+                format='pascal_voc',
+                min_area=0,
+                min_visibility=0,
+                label_fields=['labels']
+            ),
+        )
+        self.transforms = A.Compose(
+            [
+                A.Resize(height=300, width=300, p=1.0),
+                A.RandomCrop(height=256, width=256, p=1.0),
+                A.HorizontalFlip(p=0.5),
+                A.VerticalFlip(p=0.5),
+                A.Transpose(p=0.5),  # TTA×8
+                ToTensorV2(p=1.0),
+            ],
+            p=1.0,
+            additional_targets={'gt': 'image'}
+        )
+        with open(join(det_path, "ImageSets/Main/train.txt"), "r") as f:
+            self.det_ids = f.readlines()
         self.det_ids = [x[:-1] for x in self.det_ids]
         self.det_img_paths = [join(join(det_path,"JPEGImages"),x+".jpg") for x in self.det_ids]
         self.det_anno_paths = [join(join(det_path,"Annotations"),x+".xml") for x in self.det_ids]
@@ -208,6 +183,102 @@ class uwdataset(Dataset):
 
     def __len__(self):
         return min(len(self.det_infos),len(self.uieb))
+
+
+
+class mmvaldataset(Dataset):
+    def __init__(self, det_path):
+        divisor = 32
+        short_side = 600
+        self.det_transforms = A.Compose(  # FRCNN
+            [
+                A.SmallestMaxSize(short_side, p=1.0),  # resize到短边600
+                A.PadIfNeeded(min_height=None, min_width=None, pad_height_divisor=divisor,
+                              pad_width_divisor=divisor, p=1.0),
+                ToTensorV2(p=1.0),
+            ],
+            p=1.0,
+            bbox_params=A.BboxParams(
+                format='pascal_voc',
+                min_area=0,
+                min_visibility=0,
+                label_fields=['labels']
+            ),
+        )
+        with open(join(det_path, "ImageSets/Main/val.txt"), "r") as f:
+            self.det_ids = f.readlines()
+        self.det_ids = [x[:-1] for x in self.det_ids]
+        self.det_img_paths = [join(join(det_path,"JPEGImages"),x+".jpg") for x in self.det_ids]
+        self.det_anno_paths = [join(join(det_path,"Annotations"),x+".xml") for x in self.det_ids]
+        self.det_infos = []
+        for i in range(len(self.det_anno_paths)):
+            path = self.det_anno_paths[i]
+            info={}
+            tree = ET.parse(path)
+            root = tree.getroot()
+            for size in root.iter('size'):
+                w = int(size[0].text)
+                h = int(size[1].text)
+            info['size'] = [h, w]  #[h, w]
+            info['labels'] = []
+            info['bboxes'] = []
+            for obj in root.iter('object'):
+                for bbox in obj.iter('bndbox'):
+                    info['bboxes'].append([int(bbox[i].text) for i in range(4)])
+                info['labels'].append(classes.index(obj.find('name').text))
+            info['path'] = self.det_img_paths[i]
+            self.det_infos.append(info)
+
+    def reset(self):
+        random.shuffle(self.det_infos)
+    def __getitem__(self,idx):
+        det_img = imread(self.det_infos[idx]['path'])
+        det_labels = np.array(self.det_infos[idx]['labels'])
+        det_bboxes = np.array(self.det_infos[idx]['bboxes'])
+        sample = self.det_transforms(**{
+                'image': det_img,
+                'bboxes': det_bboxes,
+                'labels': det_labels
+        })
+        sample['bboxes'] = torch.Tensor(sample['bboxes'])
+        sample['labels'] = torch.Tensor(sample['labels'])
+        return {"det_img": sample['image'], "det_labels": sample['labels'], "det_bboxes":sample['bboxes'],"det_path":self.det_infos[idx]['path']}
+    def __len__(self):
+        return len(self.det_infos)
+
+
+
+
+class uiebvaldataset(Dataset):
+    def __init__(self,  uieb_path, istrain = True):
+        self.transforms = A.Compose(
+            [
+                A.Resize(height=300, width=300, p=1.0),
+                ToTensorV2(p=1.0),
+            ],
+            p=1.0,
+            additional_targets={'gt': 'image'}
+        )
+        self.uieb = []
+        with open(join(uieb_path,"train.txt"),"r") as f:
+            lines = f.readlines()
+        for line in lines:
+            self.uieb.append([join(uieb_path,x) for x in line[:-1].split(" ")])
+    def reset(self):
+        random.shuffle(self.uieb)
+    def __getitem__(self,idx):
+        uieb_inp = imread(self.uieb[idx][0])
+        uieb_ref = imread(self.uieb[idx][1])
+        sample2 = self.transforms(**{
+            'gt':uieb_ref,
+            'image':uieb_inp
+        })
+        return {"uieb_inp": sample2["image"], "uieb_ref":sample2["gt"]}
+
+    def __len__(self):
+        return len(self.uieb)
+
+
 if __name__=="__main__":
     dataset = uwdataset("/media/raid/underwater/chinamm2019uw/chinamm2019uw_train","/media/windows/c/datasets/underwater/UIEBD")
     dl = DataLoader(dataset,batch_size=2,num_workers=4,shuffle=True,collate_fn=collate_fn)
