@@ -7,17 +7,19 @@ from models.det.faster_rcnn import Model as det_Model
 from models.restoration.demo import Model as res_Model
 import numpy as np
 from utils.res_metrics import tensor2im
+from os.path import join
 import ipdb
 
 classes = ['0B', '1B', '2B']
-dataset = uwdataset("/media/raid/underwater/chinamm2019uw/chinamm2019uw_train",
-                    "/media/windows/c/datasets/underwater/UIEBD")
+root = "/media/windows/c/datasets/underwater"
+dataset = uwdataset(join(root,"chinamm2019uw/chinamm2019uw_train"),
+                    join(root,"UIEBD"))
 dl = DataLoader(dataset, batch_size=4, num_workers=4, shuffle=True, collate_fn=collate_fn)
 
-dataset_val = mmvaldataset("/media/raid/underwater/chinamm2019uw/chinamm2019uw_train")
+dataset_val = mmvaldataset(join(root,"chinamm2019uw/chinamm2019uw_train"))
 dl_val = DataLoader(dataset_val, batch_size=1, num_workers=4, shuffle=True, collate_fn=collate_fn)
 
-dataset_val_uieb = uiebvaldataset("/media/windows/c/datasets/underwater/UIEBD")
+dataset_val_uieb = uiebvaldataset(join(root,"UIEBD"))
 dl_val_uieb = DataLoader(dataset_val_uieb, batch_size=1, num_workers=4, shuffle=True, collate_fn=collate_fn)
 
 
