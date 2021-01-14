@@ -74,9 +74,9 @@ def quality_assess(X, Y ,Z):
     ssim = np.mean(cal_bwssim(Y, X))
     lmse = local_error(Y, X, 20, 10)
     ncc = compare_ncc(Y, X)
-    eng = matlab.engine.start_matlab()
-    pcqi = PCQI(Z,X,eng)
-    return {'PSNR':psnr, 'SSIM': ssim, 'LMSE': lmse, 'NCC': ncc ,'PCQI':pcqi}
+    # eng = matlab.engine.start_matlab()
+    # pcqi = PCQI(Z,X,eng)
+    return {'PSNR':psnr, 'SSIM': ssim, 'LMSE': lmse, 'NCC': ncc }
 
 def tensor2im(image_tensor, imtype=np.uint8):
     image_tensor = image_tensor.detach()

@@ -260,7 +260,7 @@ class uiebvaldataset(Dataset):
             additional_targets={'gt': 'image'}
         )
         self.uieb = []
-        with open(join(uieb_path,"train.txt"),"r") as f:
+        with open(join(uieb_path,"val.txt"),"r") as f:
             lines = f.readlines()
         for line in lines:
             self.uieb.append([join(uieb_path,x) for x in line[:-1].split(" ")])
@@ -278,6 +278,14 @@ class uiebvaldataset(Dataset):
     def __len__(self):
         return len(self.uieb)
 
+# class ruiedataset(Dataset):
+#     def __init__(self,ruie_path):
+#         super().__init__()
+#         path_uccs = {}
+#         path_uiqs = {}
+#         path_utts = {}
+#
+#     def
 
 if __name__=="__main__":
     dataset = uwdataset("/media/raid/underwater/chinamm2019uw/chinamm2019uw_train","/media/windows/c/datasets/underwater/UIEBD")
@@ -305,15 +313,12 @@ if __name__=="__main__":
     for epoch in range(200):
         dl.dataset.reset()
         it = 0
-
         pbar = tqdm(dl)
         for data in pbar:
             if it==0:
                 print(data["det_path"])
-
             pbar.set_description('epoch: %i' % epoch)
             it+=1
-
             det_model.update(data)
             if it%10==0:
                 write_meters_loss(writer, 'train',det_model.avg_meters, steps)
