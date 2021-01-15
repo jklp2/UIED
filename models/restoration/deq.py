@@ -84,10 +84,12 @@ class DEQFixedPoint(nn.Module):
                                                grad, **self.kwargs)
             return g
 
-        z.register_hook(backward_hook)
+        try:
+            z.register_hook(backward_hook)
+        except:
+            print("running with torch.no_grad()")
         return z
 
-        return fea + x
 
 from torch.autograd import gradcheck
 # run a very small network with double precision, iterating to high precision

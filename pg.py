@@ -15,7 +15,7 @@ classes = ['0B', '1B', '2B']
 root = "/media/windows/c/datasets/underwater"
 dataset = uwdataset(join(root,"chinamm2019uw/chinamm2019uw_train"),
                     join(root,"UIEBD"))
-dl = DataLoader(dataset, batch_size=2, num_workers=4, shuffle=True, collate_fn=collate_fn)
+dl = DataLoader(dataset, batch_size=4, num_workers=4, shuffle=True, collate_fn=collate_fn)
 
 dataset_val = mmvaldataset(join(root,"chinamm2019uw/chinamm2019uw_train"))
 dl_val = DataLoader(dataset_val, batch_size=1, num_workers=4, shuffle=True, collate_fn=collate_fn)
@@ -53,42 +53,9 @@ dl_val_uieb = DataLoader(dataset_val_uieb, batch_size=1, num_workers=4, shuffle=
 
 # det_model = det_Model().cuda()
 res_model = res_Model().cuda()
-writer = get_summary_writer('logs', 'debug')
-steps = 0
-for epoch in range(2000):
-    dl.dataset.reset()
-    it = 0
-    pbar = tqdm(dl)
-
-    for data in pbar:
-        if it == 0:
-            print(data["det_path"])
-        pbar.set_description('epoch: %i' % epoch)
-        it += 1
-        # det_model.update(data)
-        res_model.update(data)
-        # if it % 10 == 0:
-        #     write_meters_loss(writer, 'train_det', det_model.avg_meters, steps)
-        #     write_meters_loss(writer, 'train_res', res_model.avg_meters, steps)
-        steps += 1
-        pbar.set_postfix(**{"res_loss":res_model.avg_meters.dic["loss"]})
-        if it%200==0:
-            write_image(writer, f'train/{epoch*1000+it }', 'image', tensor2im(res_model.input), 0, 'HWC')
-            write_image(writer, f'train/{epoch*1000+it+ 1}', 'image', tensor2im(res_model.ref), 0, 'HWC')
-            write_image(writer, f'train/{epoch*1000+it+ 2}', 'image', tensor2im(res_model.output), 0, 'HWC')
-
-    if epoch % 10 == 9:
-
-        # det_model.eval()
-        # det_model.evaluate(dl_val, epoch, writer, None)
-        # det_model.train()
-        with torch.no_grad():
-            res_model.eval()
-            ret = res_model.evaluate(dl_val_uieb)
-            res_model.train()
-        state_dict = res_model.net.state_dict()
-        psnr = ret['PSNR']
-        ssim = ret['SSIM']
-        torch.save(state_dict,f'checkpoints/debug/{epoch}.pt')
-        print("save_done")
-ipdb.set_trace()
+state_dict = torch.load('checkpoints/69.pt')
+res_model.net.load_state_dict(state_dict)
+res_model.eval()
+with torch.no_grad():
+    ret = res_model.evaluate(dl_val_uieb)
+res_model.train()

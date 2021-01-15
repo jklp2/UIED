@@ -120,8 +120,8 @@ class uwdataset(Dataset):
         )
         self.transforms = A.Compose(
             [
-                A.Resize(height=300, width=300, p=1.0),
-                A.RandomCrop(height=256, width=256, p=1.0),
+                A.Resize(height=800, width=800, p=1.0),
+                A.RandomCrop(height=600, width=600, p=1.0),
                 A.HorizontalFlip(p=0.5),
                 A.VerticalFlip(p=0.5),
                 A.Transpose(p=0.5),  # TTA×8
@@ -242,7 +242,7 @@ class mmvaldataset(Dataset):
         })
         sample['bboxes'] = torch.Tensor(sample['bboxes'])
         sample['labels'] = torch.Tensor(sample['labels'])
-        return {"det_img": sample['image'], "det_labels": sample['labels'], "det_bboxes":sample['bboxes'],"det_path":self.det_infos[idx]['path']}
+        return {"det_img": sample['image'].half(), "det_labels": sample['labels'], "det_bboxes":sample['bboxes'],"det_path":self.det_infos[idx]['path']}
     def __len__(self):
         return len(self.det_infos)
 
@@ -253,7 +253,7 @@ class uiebvaldataset(Dataset):
     def __init__(self,  uieb_path, istrain = True):
         self.transforms = A.Compose(
             [
-                A.Resize(height=300, width=300, p=1.0),
+                A.Resize(height=600, width=600, p=1.0),
                 ToTensorV2(p=1.0),
             ],
             p=1.0,
