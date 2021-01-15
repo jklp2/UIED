@@ -4,7 +4,7 @@ from utils.visual import get_summary_writer, visualize_boxes
 from tqdm import tqdm
 from mscv import write_meters_loss, write_image
 from models.det.faster_rcnn import Model as det_Model
-from models.restoration.deq import Model as res_Model
+from models.restoration.cascade import Model as res_Model
 import numpy as np
 from utils.res_metrics import tensor2im
 from os.path import join
@@ -89,6 +89,6 @@ for epoch in range(2000):
         state_dict = res_model.net.state_dict()
         psnr = ret['PSNR']
         ssim = ret['SSIM']
-        torch.save(state_dict,f'checkpoints/debug/{epoch}.pt')
+        torch.save(state_dict,f'checkpoints/unique5/{epoch}.pt')
         print("save_done")
 ipdb.set_trace()

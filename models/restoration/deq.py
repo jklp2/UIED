@@ -96,6 +96,8 @@ from torch.autograd import gradcheck
 f = ResNetLayer(2,2, num_groups=2).double()
 deq = DEQFixedPoint(f, anderson, tol=1e-10, max_iter=500).double()
 gradcheck(deq, torch.randn(1,2,3,3).double().requires_grad_(), eps=1e-5, atol=1e-3)
+
+# gradcheck(deq, torch.randn(1,2,3,3).double().requires_grad_(), eps=1e-5, atol=1e-3, check_undefined_grad=False)
 class Model(nn.Module):
     def __init__(self):
         super(Model,self).__init__()
@@ -104,12 +106,13 @@ class Model(nn.Module):
         chan = 48
         f = ResNetLayer(chan, 64, kernel_size=3)
         self.net = nn.Sequential(nn.Conv2d(3, chan, kernel_size=3, bias=True, padding=1),
-                              # nn.BatchNorm2d(chan),
-                              DEQFixedPoint(f, anderson, tol=1e-2, max_iter=25, m=5),
-                              # nn.BatchNorm2d(chan),
-                              nn.Conv2d(chan, 3, kernel_size=3, bias=True, padding=1),
-                              nn.ReLU(),
-                              ).to(device)
+                                 # nn.BatchNorm2d(chan),
+                                 nn.ReLU(),
+                                 DEQFixedPoint(f, anderson, tol=1e-2, max_iter=25, m=5),
+                                 # nn.BatchNorm2d(chan),
+                                 nn.Conv2d(chan, 3, kernel_size=3, bias=True, padding=1),
+                                 nn.ReLU(),
+                                 ).to(device)
         self.optimizer = get_optimizer("adam",self.net)
         self.avg_meters = ExponentialMovingAverage(0.95)
         self.save_dir = "checkpoints/unetpp"
